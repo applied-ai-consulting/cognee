@@ -31,14 +31,21 @@ class S3FileStorage(Storage):
         self.storage_path = storage_path
         s3_config = get_s3_config()
         if s3_config.aws_access_key_id is not None and s3_config.aws_secret_access_key is not None:
-            self.s3 = s3fs.S3FileSystem(
-                key=s3_config.aws_access_key_id,
-                secret=s3_config.aws_secret_access_key,
-                token=s3_config.aws_session_token,
-                anon=False,
-                endpoint_url=s3_config.aws_endpoint_url,
-                client_kwargs={"region_name": s3_config.aws_region},
-            )
+            s3_kwargs = {
+                "key": s3_config.aws_access_key_id,
+                "secret": s3_config.aws_secret_access_key,
+                "token": s3_config.aws_session_token,
+                "anon": False,
+                "endpoint_url": s3_config.aws_endpoint_url,
+                "client_kwargs": {"region_name": s3_config.aws_region},
+            }
+            
+            if s3_config.aws_signature_version is not None:
+                if "config_kwargs" not in s3_kwargs:
+                    s3_kwargs["config_kwargs"] = {}
+                s3_kwargs["config_kwargs"]["signature_version"] = s3_config.aws_signature_version
+            
+            self.s3 = s3fs.S3FileSystem(**s3_kwargs)
         else:
             raise ValueError("S3 credentials are not set in the configuration.")
 
